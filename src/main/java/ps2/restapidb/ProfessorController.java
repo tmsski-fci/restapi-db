@@ -50,6 +50,7 @@ class ProfessorController {
 				professor.setNome(professorRequest.getNome());
 				professor.setMatricula(professorRequest.getMatricula());
 				professor.setArea(professorRequest.getArea());
+				professorRepo.save(professor);
 				return opt;
 			}
 		}
