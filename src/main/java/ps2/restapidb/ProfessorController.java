@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,45 +13,32 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 class ProfessorController {
 
-	private List<Professor> professores;
+	@Autowired
+	private ProfessorRepo professorRepo;
 
 	public ProfessorController() {
-		this.professores = new ArrayList<>();
-		professores.add(new Professor(1, "Ana", 1111, "Segurança"));
-		professores.add(new Professor(2, "Bob", 2222, "Biologia"));
-		professores.add(new Professor(3, "Charles", 3333, "Economia"));
+
 	}
 
 	@GetMapping("/api/professores")
 	Iterable<Professor> getProfessores() {
-		return this.professores;
+		return professorRepo.findAll();
 	}
 	
 	@GetMapping("/api/professores/{id}")
 	Optional<Professor> getProfessor(@PathVariable long id) {
-		for (Professor p: professores) {
-			if (p.getId() == id) {
-				return Optional.of(p);
-			}
-		}
-		return Optional.empty();
+		return professorRepo.findById(id);
 	}
 	
 	@PostMapping("/api/professores")
 	Professor createProfessor(@RequestBody Professor p) {
-		long maxId = 1;
-		for (Professor prof: professores) {
-			if (prof.getId() > maxId) {
-				maxId = prof.getId();
-			}
-		}
-		p.setId(maxId+1);
-		professores.add(p);
-		return p;
+		Professor createdProf = professorRepo.save(p);
+		return createdProf;
 	}
 	
 	@PutMapping("/api/professores/{professorId}")
@@ -57,17 +46,19 @@ class ProfessorController {
 		Optional<Professor> opt = this.getProfessor(professorId);
 		if (opt.isPresent()) {
 			Professor professor = opt.get();
-			professor.setNome(professorRequest.getNome());
-			professor.setMatricula(professorRequest.getMatricula());
-			professor.setArea(professorRequest.getArea());
+			if (professorRequest.getId() == professor.getId()) {
+				professor.setNome(professorRequest.getNome());
+				professor.setMatricula(professorRequest.getMatricula());
+				professor.setArea(professorRequest.getArea());
+				return opt;
+			}
 		}
-
-		return opt;				
+		throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Erro ao alterar dados do professor com id " + professorId);	
 	}	
 	
 	@DeleteMapping(value = "/api/professores/{id}")
 	void deleteProfessor(@PathVariable long id) {
-		professores.removeIf(p -> p.getId() == id);
+		professorRepo.deleteById(id);
 	}		
 }
 
